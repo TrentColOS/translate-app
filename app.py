@@ -16,7 +16,7 @@ MODEL_NAME = "gemma-4-E2B-it-Q8_0"  # Change to your model name in Jan
 # ============================================================
 
 client = OpenAI(
-    api_key="not-needed",  # Jan doesn't require auth locally
+    api_key="not-needed",
     base_url=JAN_BASE_URL,
 )
 
@@ -35,10 +35,22 @@ LANGUAGES = [
     "Hebrew", "Ukrainian", "Romanian", "Hungarian", "Bulgarian", "Croatian"
 ]
 
-def translate_stream(text, src_lang, tgt_lang):
-    """Stream translation from Jan.ai"""
+last_input = ""
+translation_state = gr.State("")
+streaming_lock = gr.State(False)
+
+def translate(text, src_lang, tgt_lang, current_output):
+    """Translate text via Jan.ai"""
+    global last_input
+
     if not text.strip():
+        last_input = ""
         return ""
+
+    if text == last_input:
+        return current_output
+
+    last_input = text
 
     prompt = f"""Translate from {src_lang} to {tgt_lang}.
 
@@ -46,7 +58,7 @@ def translate_stream(text, src_lang, tgt_lang):
 {tgt_lang}:"""
 
     try:
-        stream = client.chat.completions.create(
+        response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -54,18 +66,14 @@ def translate_stream(text, src_lang, tgt_lang):
             ],
             temperature=0.1,
             max_tokens=2048,
-            stream=True,
+            stream=False,
         )
-
-        result = ""
-        for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content:
-                token = chunk.choices[0].delta.content
-                result += token
-                yield result
+        result = response.choices[0].message.content
+        last_input = text  # Update after successful translation
+        return result
 
     except Exception as e:
-        yield f"Error: {str(e)}\n\nMake sure Jan.ai is running at {JAN_BASE_URL} with a model loaded."
+        return f"Error: {str(e)}\n\nMake sure Jan.ai is running at {JAN_BASE_URL} with a model loaded."
 
 def build_ui():
     with gr.Blocks(
@@ -123,18 +131,19 @@ def build_ui():
             outputs=[src_lang, tgt_lang],
         )
 
-        # Real-time translation: fires 500ms after user stops typing
-        src_text.change(
-            fn=translate_stream,
-            inputs=[src_text, src_lang, tgt_lang],
+        # Timer to check for text changes every 1 second
+        timer = gr.Timer(value=1.0)
+
+        timer.tick(
+            fn=translate,
+            inputs=[src_text, src_lang, tgt_lang, output_text],
             outputs=output_text,
-            debounce=500,
         )
 
         gr.Markdown("""
         ---
         **Tips:**
-        - Type text and translation appears automatically
+        - Translation updates automatically as you type
         - 🔄 to swap languages
         - Make sure Jan.ai is running with a model loaded
         """)
