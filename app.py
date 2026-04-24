@@ -6,13 +6,19 @@ Uses Jan.ai local server as the LLM backend
 import gradio as gr
 from openai import OpenAI
 import warnings
+import argparse
 warnings.filterwarnings("ignore")
 
 # ============================================================
 # CONFIG - Edit these to match your setup
 # ============================================================
-JAN_BASE_URL = "http://127.0.0.1:1337/v1"  # Jan.ai local server
-MODEL_NAME = "gemma-4-E2B-it-Q8_0"  # Change to your model name in Jan
+parser = argparse.ArgumentParser(description="Real-Time Translation App")
+parser.add_argument("--url", default="http://127.0.0.1:1337/v1", help="Jan.ai server URL")
+parser.add_argument("--model", default="gemma-4-E2B-it-Q8_0", help="Model name in Jan")
+args = parser.parse_args()
+
+JAN_BASE_URL = args.url
+MODEL_NAME = args.model
 # ============================================================
 
 client = OpenAI(
@@ -36,8 +42,6 @@ LANGUAGES = [
 ]
 
 last_input = ""
-translation_state = gr.State("")
-streaming_lock = gr.State(False)
 
 def translate(text, src_lang, tgt_lang, current_output):
     """Translate text via Jan.ai"""
@@ -69,7 +73,7 @@ def translate(text, src_lang, tgt_lang, current_output):
             stream=False,
         )
         result = response.choices[0].message.content
-        last_input = text  # Update after successful translation
+        last_input = text
         return result
 
     except Exception as e:
@@ -83,10 +87,11 @@ def build_ui():
             secondary_hue="gray",
         )
     ) as app:
-        gr.Markdown("""
+        gr.Markdown(f"""
         # 🌐 Real-Time Translation
         Powered by **Jan.ai** local LLM — your data stays on your machine.
         """)
+        gr.Markdown(f"**Model:** `{MODEL_NAME}` | **Server:** `{JAN_BASE_URL}`")
 
         with gr.Row():
             with gr.Column(scale=1):
