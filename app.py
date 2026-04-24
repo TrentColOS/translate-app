@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 # ============================================================
 # CONFIG - Edit these to match your setup
 # ============================================================
-JAN_BASE_URL = "http://localhost:1337/v1"
+JAN_BASE_URL = "http://127.0.0.1:1337/v1"  # Jan.ai local server
 MODEL_NAME = "gemma-4-E2B-it"  # Change to your model name in Jan
 # ============================================================
 
