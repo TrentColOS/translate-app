@@ -123,25 +123,19 @@ def build_ui():
             outputs=[src_lang, tgt_lang],
         )
 
-        translate_btn = gr.Button("Translate", variant="primary", size="lg")
-
-        translate_btn.click(
+        # Real-time translation: fires 500ms after user stops typing
+        src_text.change(
             fn=translate_stream,
             inputs=[src_text, src_lang, tgt_lang],
             outputs=output_text,
-        )
-
-        src_text.submit(
-            fn=translate_stream,
-            inputs=[src_text, src_lang, tgt_lang],
-            outputs=output_text,
+            debounce=500,
         )
 
         gr.Markdown("""
         ---
         **Tips:**
-        - Press Enter to translate instantly
-        - Click 🔄 to swap source/target languages
+        - Type text and translation appears automatically
+        - 🔄 to swap languages
         - Make sure Jan.ai is running with a model loaded
         """)
 
