@@ -86,7 +86,7 @@ def build_ui():
                     choices=LANGUAGES,
                     value="English",
                     label="From",
-                    allow_empty_value=False,
+                    allow_custom_value=False,
                 )
 
             with gr.Column(scale=1):
@@ -94,7 +94,7 @@ def build_ui():
                     choices=LANGUAGES,
                     value="French",
                     label="To",
-                    allow_empty_value=False,
+                    allow_custom_value=False,
                 )
 
         with gr.Row():
